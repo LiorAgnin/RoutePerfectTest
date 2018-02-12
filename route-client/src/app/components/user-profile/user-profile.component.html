@@ -1,0 +1,19 @@
+<div class="container">
+  <div class="card" style="width: 18rem;" *ngIf="userProfile != null">
+    <div class="card-body">
+      <h5 class="card-title">{{ userProfile.First_Name }}</h5>
+      <!-- + ' ' + userProfile.Last_Name -->
+    </div>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">Birthday: {{ userProfile.Birthday }}</li>
+      <li class="list-group-item"></li>
+      <li class="list-group-item">Vestibulum at eros</li>
+    </ul>
+    <div class="card-body">
+      <a href="#" class="card-link">Card link</a>
+      <a href="#" class="card-link">Another link</a>
+    </div>
+  </div>
+</div>
+<button class=" btn btn-danger" (click)="showAllFriend()">show all friends</button>
+<pre>{{userProfile | json}}</pre>
