@@ -4,9 +4,6 @@ const fs = require('fs');
 const _ = require('lodash');
 const redux = require('redux');
 const bodyParser = require('body-parser');
-// const {
-//     logger
-// } = require('./utilis/loggin');
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -140,7 +137,7 @@ app.post('/addusers', (req, res) => {
         res.send(result);
     });
 });
-app.post('/addhobby', (req, res) => {
+app.post('/addhobbies', (req, res) => {
     console.log(req.body);
     let sql = `INSERT INTO hobbies (name) VALUES
                 ('Soccer'),
@@ -285,7 +282,6 @@ function FindUser(username) {
 
 // add friend to user
 app.post('/addfriendtouser', (req, res) => {
-
     if (req.params.user_id === req.params.friend_id) {
         reject('A user cannot be friend themselves');
         return;
@@ -388,6 +384,8 @@ function FindUpcomingBirthdays(user_id) {
         }).catch(() => { reject() })
     });
 }
+
+// write to log file example
 // let currentDate = new Date.now();
 // console.log(req.connection.remoteAddress,
 //     req.connection.remotePort,
