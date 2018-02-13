@@ -4,6 +4,9 @@ const fs = require('fs');
 const _ = require('lodash');
 const redux = require('redux');
 const bodyParser = require('body-parser');
+// const {
+//     logger
+// } = require('./utilis/loggin');
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -13,15 +16,6 @@ const db = mysql.createConnection({
 });
 const app = express();
 
-function counter(state = 0, action) {
-    switch (action.type) {
-        case 'INCREMENT':
-            return state + 1
-        default:
-            return state
-    }
-}
-let store = redux.createStore(counter)
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
@@ -40,24 +34,23 @@ db.connect((err) => {
 
 
 app.get('/', (req, res) => {
-    let sql = 'SELECT * FROM Hobbies';
     db.query(sql, (err, result) => {
         if (err) throw err;
         // console.log(result);
-        res.send('created...');
+        res.send('default route');
     });
 });
 
 
 // Create users table
 app.get('/CreateUsersTable', (req, res) => {
-    let sql = `CREATE TABLE Users
-            (Id int AUTO_INCREMENT,
-            First_Name VARCHAR(20),
-            Last_Name VARCHAR(20),
-            Password VARCHAR(40),
-            Birthday date, 
-            PRIMARY KEY(Id))`;
+    let sql = `id INT AUTO_INCREMENT,
+                username VARCHAR(255) NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                name TEXT,
+                birth_date DATE,
+                PRIMARY KEY (id),
+                UNIQUE (username)`;
     db.query(sql, (err, result) => {
         if (err) throw err;
         console.log(result);
@@ -65,44 +58,44 @@ app.get('/CreateUsersTable', (req, res) => {
     });
 });
 // Create Friends table
-app.get('/CreateFriendsTable', (req, res) => {
-    let sql = `CREATE TABLE Friends
-            (Id int AUTO_INCREMENT,
-            FriendId int NOT NULL,          
-            UserId int NOT NULL,            
-            PRIMARY KEY(Id),
-            FOREIGN KEY (UserId) REFERENCES Users(UserId))`;
+app.get('/CreatefriendshipsTable', (req, res) => {
+    let sql = `CREATE TABLE friendships (
+                user_id INT,
+                friend_id INT,
+                date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, friend_id),
+                FOREIGN KEY (user_id)
+                REFERENCES users (id)
+                ON DELETE CASCADE,
+                FOREIGN KEY (friend_id)
+                REFERENCES users (id)
+                ON DELETE CASCADE)`;
     db.query(sql, (err, result) => {
         if (err) throw err;
         console.log(result);
-        res.send('Friends table created...');
+        res.send('friendships table created...');
     });
 });
-
-
-// Create Ip table
-app.get('/CreateIpTable', (req, res) => {
-    let sql = `CREATE TABLE Ip
-                (Id int AUTO_INCREMENT,
-                IpAdress VARCHAR(50),          
-                UserId int NOT NULL,            
-                Tries int,
-                PRIMARY KEY(Id),
-                FOREIGN KEY (UserId) REFERENCES Users(Id))`;
+// failed_login_attempts
+app.get('/CreatefailedloginattemptsTable', (req, res) => {
+    let sql = `CREATE TABLE failed_login_attempts (
+                ip VARCHAR(255) NOT NULL,
+                no_attempts INT NOT NULL,
+                last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (ip))`;
     db.query(sql, (err, result) => {
         if (err) throw err;
         console.log(result);
-        res.send('Friends table created...');
+        res.send('failed login table created...');
     });
 });
 
-
-// Create hobbits table
+// Create hobbies table
 app.get('/createHobbiestable', (req, res) => {
-    let sql = `CREATE TABLE Hobbits (
-        Id int AUTO_INCREMENT,
-        Hobby VARCHAR(255),
-        PRIMARY KEY(Id))`;
+    let sql = `CREATE TABLE hobbies (
+        id INT AUTO_INCREMENT,
+        name TEXT,
+        PRIMARY KEY (id))`;
     db.query(sql, (err, result) => {
         if (err) throw err;
         console.log(result);
@@ -110,19 +103,107 @@ app.get('/createHobbiestable', (req, res) => {
     });
 });
 
+// Create user hobbies table
+app.get('/createuserhobbies', (req, res) => {
+    let sql = `CREATE TABLE user_hobbies (
+        user_id INT,
+        hobby_id INT,
+        date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, hobby_id),
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+        FOREIGN KEY (hobby_id)
+        REFERENCES hobbies (id)
+        ON DELETE CASCADE)`;
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+        console.log(result);
+        res.send('hobbies table created...');
+    });
+});
 
 // Insert adduser 1 
-app.post('/adduser', (req, res) => {
+app.post('/addusers', (req, res) => {
     console.log(req.body);
     let sql = `INSERT INTO Users 
-                ( First_Name, Last_Name, Password, Birthday, HobbitsID) VALUES 
-                ('${req.body.First_Name}','${req.body.Last_Name}', '${req.body.Password}', '${req.body.Birthday}', '${req.body.HobbitsID}')`;
+                ( username, password, name, birth_date) VALUES 
+                ( 'LiorAgnin', '1111', 'Lior', '2010-11-20' ),
+                ( 'SaulGoodman', '2222', 'Saul', '2011-11-19' ),
+                ( 'MotiHaim', '3333', 'Moti', '2013-11-11' )
+                ( 'DanielDani', '3333', 'Daniel', '2014-11-07' )
+                ( 'TamirIsraeli', '4444', 'Tamir', '2015-11-02' )
+                ( 'AmiTami', '5555', 'Ami', '2016-11-01' )`
     let query = db.query(sql, (err, result) => {
         if (err) throw err;
         console.log(result);
         res.send(result);
     });
 });
+app.post('/addhobby', (req, res) => {
+    console.log(req.body);
+    let sql = `INSERT INTO hobbies (name) VALUES
+                ('Soccer'),
+                ('Bowling'),
+                ('Climbing'),
+                ('Surfing'),
+                ('Dancing'),
+                ('Painting'),
+                ('Jogging'),
+                ('Tennis'),
+                ('Photographing')`
+    let query = db.query(sql, (err, result) => {
+        if (err) throw err;
+        console.log(result);
+        res.send(result);
+    });
+});
+app.post('/addhobbytouser', (req, res) => {
+    console.log(req.body);
+    let sql = `INSERT INTO user_hobbies (user_id, hobby_id) VALUES
+                (1,1),
+                (1,2),
+                (1,3),
+                (1,4),
+                (2,5),
+                (2,1),
+                (3,5),
+                (3,3),
+                (4,1),
+                (5,1),
+                (6,1),
+                (6,7),
+                (6,2),
+                (6,3),
+                `
+    let query = db.query(sql, (err, result) => {
+        if (err) throw err;
+        console.log(result);
+        res.send(result);
+    });
+});
+app.post('/addfriendtouser', (req, res) => {
+    console.log(req.body);
+    let sql = `INSERT INTO friendships (user_id, friend_id) VALUES
+                (1,2),
+                (2,1),
+                (3,5),
+                (3,4),
+                (4,1),
+                (5,1),
+                (6,1),
+                (6,5),
+                (6,2)
+                `;
+    let query = db.query(sql, (err, results) => {
+        if (err) {
+            console.log(err);
+        } else {
+            res.send(results);
+        }
+    });
+});
+
 
 function isValid(First_Name, Password) {
     let valid = false;
@@ -160,9 +241,11 @@ app.post('/login', (req, res) => {
     }
 });
 
-// get user
-app.get('/getuser', (req, res) => {
-    let sql = `SELECT * FROM users WHERE Id = '${req.query['Id']}'`;
+// find by friend id
+app.get('/findbyfriendid/:id', (req, res) => {
+    let sql = `SELECT hobbies.name FROM hobbies 
+                LEFT JOIN user_hobbies ON user_hobbies.hobby_id = hobbies.id 
+                WHERE user_hobbies.user_id = '${req.params.Id}'`;
     let query = db.query(sql, (err, results) => {
         if (err) throw err;
         console.log(results);
@@ -170,73 +253,141 @@ app.get('/getuser', (req, res) => {
     });
 });
 
-//bithdays 
-app.get('/checkfriendsnumber', (req, res) => {
-    console.log(req.query['Id']);
-    let sql = `SELECT FriendId FROM Friends WHERE UserId = '${req.query['Id']}'`;
+// find friend by id
+app.get('/findbyuserid/:Id', (req, res) => {
+    let sql = `SELECT hobbies.name FROM hobbies 
+                LEFT JOIN user_hobbies ON user_hobbies.hobby_id = hobbies.id 
+                WHERE user_hobbies.user_id ='${req.params.Id}'`;
     let query = db.query(sql, (err, results) => {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log(results);
-            res.send(results);
-        }
+        if (err) throw err;
+        console.log(results);
+        res.send(results);
     });
 });
+// // find user
+// app.get('/finduser', (req, res) => {
+//     let sql = `SELECT * FROM users WHERE username = '${req.params.Id}'`;
+//     let query = db.query(sql, (err, results) => {
+//         if (err) throw err;
+//         console.log(results);
+//         res.send(results);
+//     });
+// });
+function FindUser(username) {
+    return new Promise((resolve, reject) => {
+        db.query('SELECT * FROM users WHERE username = ?', [username]).then((res) => {
+            resolve(res)
+        }).catch(() => {
+            reject()
+        })
+    });
+}
 
+// add friend to user
+app.post('/addfriendtouser', (req, res) => {
 
-// Birthdays in upcoming 2 weeks
-// SELECT * 
-// FROM  users 
-// WHERE  DATE_ADD(Birthday, 
-//                 INTERVAL YEAR(CURDATE())-YEAR(birthday)
-//                          + IF(DAYOFYEAR(CURDATE()) > DAYOFYEAR(birthday),1,0)
-//                 YEAR)  
-//             BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+    if (req.params.user_id === req.params.friend_id) {
+        reject('A user cannot be friend themselves');
+        return;
+    }
+    fifoCheckAndRemove('friendships', req.params.user_id, 5).then(() => {
+        db.query('INSERT INTO ' + table_name + ' (user_id, friend_id) VALUES (?, ?)', [req.params.user_id, req.params.friend_id]).then(() => {
+            resolve()
+        }).catch(() => {
+            reject()
+        })
+    }).catch(() => {
+        reject()
+    })
+});
 
+// fifo check and remove user
+function fifoCheckAndRemove(table_name, user_id, max_amount) {
+    return new Promise((resolve, reject) => {
+        db.query('SELECT user_id FROM ' + table_name + ' WHERE user_id = ?', [user_id]).then((res) => {
+            if (res.length >= max_amount) {
+                db.query('DELETE FROM ' + table_name + ' WHERE date_added IS NOT NULL AND user_id = ? order by date_added asc LIMIT 1', [user_id]).then(() => {
+                    resolve()
+                }).catch(() => {
+                    reject()
+                })
+            } else {
+                resolve()
+            }
+        })
+    });
+}
 
-// select friends name
-// select username from users u
-// inner join friends f on f.friendid = u.iduser
-// where f.iduser = 1
-
-// RETURN FRIENDS OF FRIENDS 
-// SELECT DISTINCT 
-//     u.Id, 
-//     u.First_Name, 
-//     u.Birthday 
-//     FROM friends a 
-//     INNER JOIN friends b ON a.FriendId = b.UserId 
-//     INNER JOIN users u ON u.Id = b.FriendId 
-//     WHERE U.Id = '3' 
-//     AND b.FriendId <> a.UserId
-
-app.get('/birthdayintwoweeks', (req, res) => {
-    let sql = `SELECT * FROM users 
-                WHERE  DATE_ADD(Birthday, 
-                INTERVAL YEAR(CURDATE())-YEAR(birthday)
-                + IF(DAYOFYEAR(CURDATE()) > DAYOFYEAR(Birthday),1,0)
-                    YEAR)  
-                BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)
-                ORDER BY Birthday`;
-    let query = db.query(sql, (err, result) => {
-        if(err) throw err;
+// find friends of Friends 2 weeks birthday
+app.get('/findfriendsofFriends2weeksbirthday/:id', (req, res) => {
+    let now = new Date();
+    let twoWeeks = 1000 * 60 * 60 * 24 * 14;
+    let twoWeeksFromNow = new Date(new Date().getTime() + twoWeeks);
+    let sql = `SELECT users.id, users.name, users.birth_date 
+            FROM friendships f 
+            JOIN users ON ( 
+            (f.friend_id = users.id AND f.user_id = ?) 
+            OR (f.friend_id = users.id AND f.user_id IN (SELECT friend_id FROM friendships f WHERE f.user_id = ?)))  
+            WHERE (DATE_FORMAT(users.birth_date, '%c-%d') >= DATE_FORMAT(?, '%c-%d') AND DATE_FORMAT(users.birth_date, '%c-%d') 
+            <= DATE_FORMAT(?, '%c-%d'))
+            AND users.id <> ?
+            GROUP BY users.id, users.name`;
+    let query = db.query(sql, [req.params.id, req.params.id, now, twoWeeksFromNow, id], (err, result) => {
+        if (err) throw err;
         console.log(result);
-        res.send('Post updated...');
     });
 });
-app.post('/addfriend', (req, res) => {
-    console.log(req.body);
-    let sql = `INSERT INTO Friends (UserId, FriendId)  
-               VALUES(${req.body.IdToAddTo} , ${req.body.FriendTo})`;
-    let query = db.query(sql, (err, results) => {
-        if (err) {
-            console.log(err);
+
+// Find Potential Friends
+app.get('/findpotentialfriends/:username', (req, res) => {
+    this.FindUser(req.params.username).then((user) => {
+        if (user[0]) {
+            user = user[0],
+                fiveDays = 1000 * 60 * 60 * 24 * 5,
+                fiveDaysAgo = new Date(new Date(user.birth_date).getTime() - fiveDays),
+                fiveDaysfromNow = new Date(new Date(user.birth_date).getTime() + fiveDays);
+            db.query(`SELECT users.name 
+                        FROM users 
+                        JOIN user_hobbies ON (user_hobbies.user_id = users.id) 
+                        WHERE (DATE_FORMAT(users.birth_date, '%c-%d') >= DATE_FORMAT(?, '%c-%d') AND DATE_FORMAT(users.birth_date, '%c-%d') <= DATE_FORMAT(?, '%c-%d')) 
+                        AND user_hobbies.hobby_id IN (SELECT hobbies.id FROM hobbies LEFT JOIN user_hobbies ON user_hobbies.hobby_id = hobbies.id WHERE user_hobbies.user_id = ?) 
+                        AND users.id <> ?
+                        GROUP BY users.name`, [fiveDaysAgo, fiveDaysfromNow, user.id, user.id]).then((friends) => {
+                let friendsArr = [];
+                friends.forEach(friend => {
+                    friendsArr.push(friend.name);
+                });
+                resolve(friendsArr)
+            }).catch(() => {
+                reject()
+            })
         } else {
-            res.send(results);
+            resolve([])
         }
+    }).catch(() => {
+        reject()
+    })
+
+})
+
+function FindUpcomingBirthdays(user_id) {
+    return new Promise((resolve, reject) => {
+        let now = new Date();
+        let lastDayOfYear = new Date(new Date().getFullYear(), 11, 31);
+        db.query(`SELECT users.name 
+                    FROM users 
+                    WHERE (DATE_FORMAT(users.birth_date, '%c-%d') >= DATE_FORMAT(?, '%c-%d') 
+                    AND DATE_FORMAT(users.birth_date, '%c-%d') <= DATE_FORMAT(?, '%c-%d'))
+                    AND users.id <> ?`,
+        [now, lastDayOfYear, user_id]).then((friends) => {
+            let friendsArr = [];
+            friends.forEach(friend => {
+                friendsArr.push(friend.name);
+            });
+            resolve(friendsArr)
+        }).catch(() => { reject() })
     });
-});
+}
 // let currentDate = new Date.now();
 // console.log(req.connection.remoteAddress,
 //     req.connection.remotePort,
@@ -251,19 +402,6 @@ app.post('/addfriend', (req, res) => {
 // fs.writeFile('log.txt', signInDetailFailure, (err) => {
 //     if (err) throw err;
 // });
-// getUserHobbit(IdsAr) {
-//   for (let i = 0; i < IdsAr.length; i++) {
-//     this._HobbitsService.GetHobbits(IdsAr[i])
-//       .subscribe(res =>
-//         console.log(res)
-//       );
-
-//     this.HobbitsArray.push({
-//       Id:,
-//       Hobbit: 
-//     })
-//   }
-// }
 
 app.get('/gethobby', (req, res) => {
     let Id = req.query.Id;
@@ -283,7 +421,6 @@ app.get('/getfriends/:Id', (req, res) => {
         res.send(result);
     });
 });
-
 
 
 app.listen('3000', () => {
